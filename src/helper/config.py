@@ -1,6 +1,6 @@
 POLICY = {
     # data path
-    'vid2015':'/home/jaehyuk/dataset/ILSVRC2015_sample',
+    'vid2015':'/home/jaehyuk/dataset/ILSVRC2015',
     'pretrained_model':'/home/jaehyuk/dataset/checkpoints/pretrained/GOTURN/checkpoint.ckpt-1',
 
     # data augmentation
@@ -30,8 +30,8 @@ POLICY = {
     'thresh_IOU': .6,
 
     # train_optimizer
-    'step_values': [50000, 100000],
-    'learning_rates': [0.00001, 0.000001, 0.0000001],
+    'step_values': [50000],
+    'learning_rates': [0.00001, 0.000001],
     'momentum': 0.9,
     'momentum2': 0.999,
     'decay': 0.0005,
