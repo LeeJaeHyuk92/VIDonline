@@ -24,7 +24,8 @@ POLICY = {
     # 4k / 8 * 200 = 100k(800k img, 1 epoch) -> 16h
 
     # train_loss
-    'object_scale': .1,
+    'object_scale': 5,
+    'noobject_scale': 1,
     'coord_scale': 5,
     'thresh': .6,
     'thresh_IOU': .6,

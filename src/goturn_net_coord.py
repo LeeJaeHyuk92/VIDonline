@@ -170,10 +170,8 @@ class TRACKNET:
         self.print_shapes()
 
         if (self.train):
-            sconf = float(POLICY['object_scale'])
-            scoord = float(POLICY['coord_scale'])
-            self.loss = sconf * self.loss_grid(self.re_fc4_image, POLICY, name="loss_grid")
-            self.loss += scoord * self.loss_coord(self.fc4_adj, POLICY ,name="loss_coord")
+            self.loss = self.loss_grid(self.re_fc4_image, POLICY, name="loss_grid") + \
+                        self.loss_coord(self.fc4_adj, POLICY ,name="loss_coord")
             tf.summary.scalar('total loss', self.loss)
 
             l2_loss = tf.add_n(tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES), name='l2_weight_loss')
@@ -183,6 +181,7 @@ class TRACKNET:
         m = training_schedule
         B = m['num']
         anchors = m['anchors']
+        scoord = m['coord_scale']
         H, W = m['side'], m['side']
 
         net_out_reshape = tf.reshape(net_out, [-1, B, 4])
@@ -195,6 +194,7 @@ class TRACKNET:
         diff_flat = tf.abs(tf.reshape(diff, [-1, B * 4]))
         loss = tf.reduce_sum(diff_flat, 1)
         loss = tf.reduce_mean(loss, name=name)
+        loss = scoord * loss
         tf.summary.scalar('loss_coord', loss)
 
         return loss
@@ -208,16 +208,19 @@ class TRACKNET:
         H, W = m['side'], m['side']
         B = m['num']
         HW = H * W  # number of grid cells
+        sconf = float(m['object_scale'])
+        snoob = float(m['noobject_scale'])
 
 
         # Extract the coordinate prediction from net.out
         net_out_reshape = tf.reshape(net_out, [-1, H, W, B])
         adjusted_c = expit_tensor(net_out_reshape)
         adjusted_c = tf.reshape(adjusted_c, [-1, H * W, B])
-
         adjusted_net_out = adjusted_c
 
+        conid = snoob * (1. - self.confs) + sconf * self.confs
         loss = tf.pow(adjusted_net_out - self.confs, 2)
+        loss = tf.multiply(loss, conid)
         loss = tf.reshape(loss, [-1, H * W * B])
         loss = tf.reduce_sum(loss, 1)
         loss = tf.reduce_mean(loss, name=name)
