@@ -162,7 +162,7 @@ if __name__ == "__main__":
 
     # train
     try:
-        for i in range(start, int((len(train_vid_videos)) / BATCH_SIZE * NUM_EPOCHS)):
+        for i in range(start, int((float(len(train_vid_videos))) / BATCH_SIZE * NUM_EPOCHS)):
             # save every 1h
             if i % int((len(train_vid_videos)) * 12 / BATCH_SIZE) == 0:
                 logger.info("start epoch[%d]" % (int(float(i) / (len(train_vid_videos)) * BATCH_SIZE)))
@@ -188,10 +188,10 @@ if __name__ == "__main__":
                     cv2.imwrite('./error_generatedData/step_{:>3}_target_'.format(start) + str(randomString) + '.jpg', cur_batch[1][error_index])
 
             [_, loss] = sess.run([train_step, tracknet.loss_wdecay], feed_dict={tracknet.image: cur_batch[0],
-                                                                               tracknet.target: cur_batch[1],
-                                                                               tracknet.bbox: cur_batch[2],
-                                                                               tracknet.confs: feed_val['confs'],
-                                                                               tracknet.coord: feed_val['coord']})
+                                                                                tracknet.target: cur_batch[1],
+                                                                                tracknet.bbox: cur_batch[2],
+                                                                                tracknet.confs: feed_val['confs'],
+                                                                                tracknet.coord: feed_val['coord']})
             logger.debug('Train: time elapsed: %.3fs, average_loss: %f' % (time.time() - start_time, loss))
 
             if i % 10 == 0 and i > start:
@@ -199,7 +199,7 @@ if __name__ == "__main__":
                                                               tracknet.target: cur_batch[1],
                                                               tracknet.bbox: cur_batch[2],
                                                               tracknet.confs: feed_val['confs'],
-                                                              tracknet.coord: feed_val['coord']}),
+                                                              tracknet.coord: feed_val['coord']})
                 train_writer.add_summary(summary, i)
     except KeyboardInterrupt:
         print("get keyboard interrupt")

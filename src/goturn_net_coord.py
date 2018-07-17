@@ -173,7 +173,8 @@ class TRACKNET:
             sconf = float(POLICY['object_scale'])
             scoord = float(POLICY['coord_scale'])
             self.loss = sconf * self.loss_grid(self.re_fc4_image, POLICY, name="loss_grid")
-            self.loss += scoord * self.loss_coord(self.fc4_adj, POLICY ,name = "loss_coord")
+            self.loss += scoord * self.loss_coord(self.fc4_adj, POLICY ,name="loss_coord")
+            tf.summary.scalar('total loss', self.loss)
 
             l2_loss = tf.add_n(tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES), name='l2_weight_loss')
             self.loss_wdecay = self.loss + l2_loss
@@ -193,7 +194,7 @@ class TRACKNET:
         diff = tf.subtract(coords, self.coord)
         diff_flat = tf.abs(tf.reshape(diff, [-1, B * 4]))
         loss = tf.reduce_sum(diff_flat, 1)
-        loss = .5 * tf.reduce_mean(loss, name=name)
+        loss = tf.reduce_mean(loss, name=name)
         tf.summary.scalar('loss_coord', loss)
 
         return loss
@@ -219,7 +220,7 @@ class TRACKNET:
         loss = tf.pow(adjusted_net_out - self.confs, 2)
         loss = tf.reshape(loss, [-1, H * W * B])
         loss = tf.reduce_sum(loss, 1)
-        loss = .5 * tf.reduce_mean(loss, name=name)
+        loss = tf.reduce_mean(loss, name=name)
         tf.summary.scalar('loss_grid', loss)
 
         return loss
