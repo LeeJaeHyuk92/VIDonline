@@ -1,6 +1,6 @@
 POLICY = {
     # data path
-    'vid2015':'/home/jaehyuk/dataset/ILSVRC2015',
+    'vid2015':'/home/jaehyuk/dataset/ILSVRC2015_sample',
     'pretrained_model':'/home/jaehyuk/dataset/checkpoints/pretrained/GOTURN/checkpoint.ckpt-1',
 
     # data augmentation

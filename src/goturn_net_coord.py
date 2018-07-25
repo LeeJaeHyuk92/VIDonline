@@ -2,6 +2,7 @@ import tensorflow as tf
 import numpy as np
 from helper.config import POLICY
 from logger.logger import setup_logger
+from helper.BoundingBox import calculate_box
 
 logger = setup_logger(logfile=None)
 
@@ -19,7 +20,7 @@ def LeakyReLU(x, alpha=0.1, name="lrelu"):
 
 
 class TRACKNET:
-    def __init__(self, batch_size, train=True):
+    def __init__(self, batch_size, train=True, online=False):
 
         self.batch_size = batch_size
         self.target = tf.placeholder(tf.float32, [None, 227, 227, 3])
@@ -33,6 +34,10 @@ class TRACKNET:
             self.bbox = tf.placeholder(tf.float32, [None, 4])
             self.confs = tf.placeholder(tf.float32, [None, POLICY['side'] * POLICY['side'], POLICY['num']])
             self.coord = tf.placeholder(tf.float32, [None, POLICY['num'], 4])
+            if online:
+                self.drop = 1.
+            else:
+                self.drop = 0.5
 
     def build(self):
         ########### for target ###########
@@ -137,15 +142,15 @@ class TRACKNET:
         # for object only using image
         self.fc1_image = self._fc_relu_layers(self.image_pool5, dim=4096, name="fc1_image")
         if (self.train):
-            self.fc1_image = tf.nn.dropout(self.fc1_image, 0.5)
+            self.fc1_image = tf.nn.dropout(self.fc1_image, self.drop)
 
         self.fc2_image = self._fc_relu_layers(self.fc1_image, dim=4096, name="fc2_image")
         if (self.train):
-            self.fc2_image = tf.nn.dropout(self.fc2_image, 0.5)
+            self.fc2_image = tf.nn.dropout(self.fc2_image, self.drop)
 
         self.fc3_image = self._fc_relu_layers(self.fc2_image, dim=4096, name="fc3_image")
         if (self.train):
-            self.fc3_image = tf.nn.dropout(self.fc3_image, 0.5)
+            self.fc3_image = tf.nn.dropout(self.fc3_image, self.drop)
 
         self.fc4_image = self._fc_layers(self.fc3_image, dim=self.outdim_obj, name="fc4_image")
         self.re_fc4_image = tf.reshape(self.fc4_image, shape=[-1, POLICY['side'], POLICY['side'], 1])
@@ -154,15 +159,15 @@ class TRACKNET:
         # coordinate using image + target
         self.fc1_adj = self._fc_relu_layers(self.concat, dim=4096, name="fc1_adj")
         if (self.train):
-            self.fc1_adj = tf.nn.dropout(self.fc1_adj, 0.5)
+            self.fc1_adj = tf.nn.dropout(self.fc1_adj, self.drop)
 
         self.fc2_adj = self._fc_relu_layers(self.fc1_adj, dim=4096, name="fc2_adj")
         if (self.train):
-            self.fc2_adj = tf.nn.dropout(self.fc2_adj, 0.5)
+            self.fc2_adj = tf.nn.dropout(self.fc2_adj, self.drop)
 
         self.fc3_adj = self._fc_relu_layers(self.fc2_adj, dim=4096, name="fc3_adj")
         if (self.train):
-            self.fc3_adj = tf.nn.dropout(self.fc3_adj, 0.5)
+            self.fc3_adj = tf.nn.dropout(self.fc3_adj, self.drop)
 
         self.fc4_adj = self._fc_layers(self.fc3_adj, dim=self.outdim_cord, name="fc4_adj")
 
@@ -495,13 +500,18 @@ def _variable_summaries(var):
 
 
 if __name__ == "__main__":
-    tracknet = TRACKNET(10)
+    tracknet = TRACKNET(1, train=False)
     tracknet.build()
     sess = tf.Session()
     a = np.full((tracknet.batch_size, 227, 227, 3), 1)
     b = np.full((tracknet.batch_size, 227, 227, 3), 2)
     sess.run(tf.global_variables_initializer())
-    sess.run([tracknet.image_pool5], feed_dict={tracknet.image: a, tracknet.target: b})
+    # sess.run([tracknet.image_pool5], feed_dict={tracknet.image: a, tracknet.target: b})
+
+    re_fc4_image, fc4_adj = sess.run([tracknet.re_fc4_image, tracknet.fc4_adj],
+                                     feed_dict={tracknet.image: a,
+                                                tracknet.target: b})
+    bbox_estimate, object_bool, objectness = calculate_box(re_fc4_image, fc4_adj)
 
 
 
