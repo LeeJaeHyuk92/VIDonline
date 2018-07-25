@@ -2,7 +2,6 @@ import tensorflow as tf
 import numpy as np
 from helper.config import POLICY
 from logger.logger import setup_logger
-from helper.BoundingBox import calculate_box
 
 logger = setup_logger(logfile=None)
 
@@ -511,7 +510,8 @@ if __name__ == "__main__":
     re_fc4_image, fc4_adj = sess.run([tracknet.re_fc4_image, tracknet.fc4_adj],
                                      feed_dict={tracknet.image: a,
                                                 tracknet.target: b})
-    bbox_estimate, object_bool, objectness = calculate_box(re_fc4_image, fc4_adj)
+    # from helper.BoundingBox import calculate_box
+    # bbox_estimate, object_bool, objectness = calculate_box(re_fc4_image, fc4_adj)
 
 
 

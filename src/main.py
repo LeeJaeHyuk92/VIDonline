@@ -10,6 +10,7 @@ from helper.config import POLICY
 from helper.helper import show_images
 from logger.logger import setup_logger
 from loader.loader_vid import loader_vid
+from loader.loader_imagenet import loader_imagenet
 from example_generator import example_generator, check_center
 
 setproctitle.setproctitle('TRAIN_TRACKER_IMAGENET_VID')
@@ -25,6 +26,19 @@ kGeneratedExamplesPerImage = POLICY['kGeneratedExamplesPerImage']
 
 run_config = tf.ConfigProto()
 run_config.gpu_options.allow_growth = True
+
+
+def train_image(image_loader, images):
+    """TODO: Docstring for train_image.
+    """
+    curr_image = np.random.randint(0, len(images))
+    list_annotations = images[curr_image]
+    curr_ann = np.random.randint(0, len(list_annotations))
+
+    image, bbox, error = image_loader.load_annotation(curr_image, curr_ann)
+
+    return image, bbox, error
+    # tracker_trainer.train(image, image, bbox, bbox)
 
 
 def train_video(videos):
@@ -87,24 +101,79 @@ def data_reader(train_vid_videos):
     bbox_gt_scaled = np.reshape(np.array(bbox_gt_scaleds), (len(bbox_gt_scaleds), 4))
 
     return [images, targets, bbox_gt_scaled]
-if __name__ == "__main__":
-    # Load vid training images and annotations
-    vid_folder = os.path.join(POLICY['vid2015'], 'images')
-    vid_annotations_folder = os.path.join(POLICY['vid2015'], 'gt')
-    objLoaderVID = loader_vid(vid_folder, vid_annotations_folder, logger)
-    objLoaderVID.loaderVID()
-    train_vid_videos = objLoaderVID.get_videos()
 
-    vid_images = 0
-    for vid_idx in xrange(len(train_vid_videos)):
-        video = train_vid_videos[vid_idx]
-        annos = video.annotations
-        vid_images += len(annos)
-    total_image_size = vid_images
-    logger.info('total training VID images size is: ' + str(vid_images))
+
+def data_reader_DET(objLoaderImgNet, train_imagenet_images):
+    objExampleGen = example_generator(float(POLICY['lamda_shift']), float(POLICY['lamda_scale']),
+                                      float(POLICY['min_scale']), float(POLICY['max_scale']), logger)
+
+    images = []
+    targets = []
+    bbox_gt_scaleds = []
+
+    for idx in xrange(POLICY['BATCH_SIZE']):
+
+        error = True
+        while error:
+            image, bbox, error = train_image(objLoaderImgNet, train_imagenet_images)
+            if not error:
+                objExampleGen.reset(bbox, bbox, image, image)
+                images, targets, bbox_gt_scaleds = objExampleGen.make_training_examples(kGeneratedExamplesPerImage,
+                                                                                        images, targets, bbox_gt_scaleds)
+
+
+    # debug
+    # show_images(images, targets, bbox_gt_scaleds)
+
+    for idx, (img, tag, box) in enumerate(zip(images, targets, bbox_gt_scaleds)):
+        images[idx] = cv2.resize(img, (HEIGHT, WIDTH), interpolation=cv2.INTER_CUBIC)
+        targets[idx] = cv2.resize(tag, (HEIGHT, WIDTH), interpolation=cv2.INTER_CUBIC)
+        bbox_gt_scaleds[idx] = np.array([box.x1, box.y1, box.x2, box.y2], dtype=np.float32)
+
+    images = np.reshape(np.array(images), (len(images), 227, 227, 3))
+    targets = np.reshape(np.array(targets), (len(targets), 227, 227, 3))
+    bbox_gt_scaled = np.reshape(np.array(bbox_gt_scaleds), (len(bbox_gt_scaleds), 4))
+
+    return [images, targets, bbox_gt_scaled]
+
+
+if __name__ == "__main__":
+
+    # thanks for https://github.com/nrupatunga/PY-GOTURN
+    logger.info('Loading training data')
+    # TODO, Load imagenet training images and annotations
+    imagenet_folder = os.path.join(POLICY['imagenet'], 'images')
+    imagenet_annotations_folder = os.path.join(POLICY['imagenet'], 'gt')
+    objLoaderImgNet = loader_imagenet(imagenet_folder, imagenet_annotations_folder, logger)
+    train_imagenet_images = objLoaderImgNet.loaderImageNetDet()
+
+    # ###### Load vid training images and annotations #####
+    # vid_folder = os.path.join(POLICY['vid2015'], 'images')
+    # vid_annotations_folder = os.path.join(POLICY['vid2015'], 'gt')
+    # objLoaderVID = loader_vid(vid_folder, vid_annotations_folder, logger)
+    # objLoaderVID.loaderVID()
+    # train_vid_videos = objLoaderVID.get_videos()
+    #
+    # vid_images = 0
+    # det_images = 0
+    # for vid_idx in xrange(len(train_vid_videos)):
+    #     video = train_vid_videos[vid_idx]
+    #     annos = video.annotations
+    #     vid_images += len(annos)
+    #
+    # total_image_size = vid_images
+    # logger.info('total training VID images size is: ' + str(vid_images))
+    # ###### Load vid training images and annotations #####
+
+
+    logger.info('total training image size is: IMAGENET: ' + str(len(train_imagenet_images)))
 
     # debug
     # cur_batch = data_reader(train_vid_videos)
+    # cur_batch = data_reader_DET(objLoaderImgNet, train_imagenet_images)
+
+    total_images = len(train_imagenet_images)
+
 
     # network initialization
     tracknet = goturn_net_coord.TRACKNET(BATCH_SIZE)
@@ -162,10 +231,10 @@ if __name__ == "__main__":
 
     # train
     try:
-        for i in range(start, int((float(len(train_vid_videos))) / BATCH_SIZE * NUM_EPOCHS)):
+        for i in range(start, int((float(total_images)) / BATCH_SIZE * NUM_EPOCHS)):
             # save every 1h
-            if i % int((len(train_vid_videos)) * 12 / BATCH_SIZE) == 0:
-                logger.info("start epoch[%d]" % (int(float(i) / (len(train_vid_videos)) * BATCH_SIZE)))
+            if i % int((total_images) / BATCH_SIZE) == 0:
+                logger.info("start epoch[%d]" % (int(float(i) / (total_images) * BATCH_SIZE)))
                 if i > start:
                     save_ckpt = "checkpoint.ckpt"
                     last_save_itr = i
@@ -173,7 +242,9 @@ if __name__ == "__main__":
 
             start_time = time.time()
             # dataloader test
-            cur_batch = data_reader(train_vid_videos)
+
+            # cur_batch = data_reader(train_vid_videos)
+            cur_batch = data_reader_DET(objLoaderImgNet, train_imagenet_images)
             logger.debug('data_reader: time elapsed: %.3f' % (time.time() - start_time))
 
             start_time = time.time()
