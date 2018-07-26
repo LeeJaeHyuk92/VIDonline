@@ -41,7 +41,7 @@ def train_image(image_loader, images):
     # tracker_trainer.train(image, image, bbox, bbox)
 
 
-def train_video(videos):
+def train_video(videos, adj=True):
     """TODO: Docstring for train_video.
     """
     video_num = np.random.randint(0, len(videos))
@@ -60,13 +60,19 @@ def train_video(videos):
     ann_index = np.random.randint(0, len(annotations) - 1)
     frame_num_prev, image_prev, bbox_prev = video.load_annotation(ann_index)
 
-    frame_num_curr, image_curr, bbox_curr = video.load_annotation(ann_index + 1)
-
+    if adj:
+        frame_num_curr, image_curr, bbox_curr = video.load_annotation(ann_index + 1)
+    else:
+        distance = 100
+        min_index = max(0, ann_index - distance)
+        max_index = min(len(annotations) - 1, ann_index + distance)
+        search_index = np.random.randint(min_index, max_index)
+        frame_num_curr, image_curr, bbox_curr = video.load_annotation(search_index)
     return image_prev, image_curr, bbox_prev, bbox_curr
     # tracker_trainer.train(image_prev, image_curr, bbox_prev, bbox_curr)
 
 
-def data_reader(train_vid_videos):
+def data_reader_old_version(train_vid_videos):
     objExampleGen = example_generator(float(POLICY['lamda_shift']), float(POLICY['lamda_scale']),
                                       float(POLICY['min_scale']), float(POLICY['max_scale']), logger)
 
@@ -101,6 +107,35 @@ def data_reader(train_vid_videos):
     bbox_gt_scaled = np.reshape(np.array(bbox_gt_scaleds), (len(bbox_gt_scaleds), 4))
 
     return [images, targets, bbox_gt_scaled]
+
+def data_reader(train_vid_videos, adj=True):
+    objExampleGen = example_generator(float(POLICY['lamda_shift']), float(POLICY['lamda_scale']),
+                                      float(POLICY['min_scale']), float(POLICY['max_scale']), logger)
+
+    images = []
+    targets = []
+    bbox_gt_scaleds = []
+
+    for idx in xrange(POLICY['BATCH_SIZE']):
+        img_prev, img_curr, bbox_prev, bbox_curr = train_video(train_vid_videos, adj=adj)
+        objExampleGen.reset(bbox_prev, bbox_curr, img_prev, img_curr)
+        images, targets, bbox_gt_scaleds = objExampleGen.make_training_examples(kGeneratedExamplesPerImage,
+                                                                                    images, targets, bbox_gt_scaleds)
+
+    # debug
+    # show_images(images, targets, bbox_gt_scaleds)
+
+    for idx, (img, tag, box) in enumerate(zip(images, targets, bbox_gt_scaleds)):
+        images[idx] = cv2.resize(img, (HEIGHT, WIDTH), interpolation=cv2.INTER_CUBIC)
+        targets[idx] = cv2.resize(tag, (HEIGHT, WIDTH), interpolation=cv2.INTER_CUBIC)
+        bbox_gt_scaleds[idx] = np.array([box.x1, box.y1, box.x2, box.y2], dtype=np.float32)
+
+    images = np.reshape(np.array(images), (len(images), 227, 227, 3))
+    targets = np.reshape(np.array(targets), (len(targets), 227, 227, 3))
+    bbox_gt_scaled = np.reshape(np.array(bbox_gt_scaleds), (len(bbox_gt_scaleds), 4))
+
+    return [images, targets, bbox_gt_scaled]
+
 
 
 def data_reader_DET(objLoaderImgNet, train_imagenet_images):
@@ -147,29 +182,29 @@ if __name__ == "__main__":
     objLoaderImgNet = loader_imagenet(imagenet_folder, imagenet_annotations_folder, logger)
     train_imagenet_images = objLoaderImgNet.loaderImageNetDet()
 
-    # ###### Load vid training images and annotations #####
-    # vid_folder = os.path.join(POLICY['vid2015'], 'images')
-    # vid_annotations_folder = os.path.join(POLICY['vid2015'], 'gt')
-    # objLoaderVID = loader_vid(vid_folder, vid_annotations_folder, logger)
-    # objLoaderVID.loaderVID()
-    # train_vid_videos = objLoaderVID.get_videos()
-    #
-    # vid_images = 0
-    # det_images = 0
-    # for vid_idx in xrange(len(train_vid_videos)):
-    #     video = train_vid_videos[vid_idx]
-    #     annos = video.annotations
-    #     vid_images += len(annos)
-    #
-    # total_image_size = vid_images
-    # logger.info('total training VID images size is: ' + str(vid_images))
-    # ###### Load vid training images and annotations #####
+    ###### Load vid training images and annotations #####
+    vid_folder = os.path.join(POLICY['vid2015'], 'images')
+    vid_annotations_folder = os.path.join(POLICY['vid2015'], 'gt')
+    objLoaderVID = loader_vid(vid_folder, vid_annotations_folder, logger)
+    objLoaderVID.loaderVID()
+    train_vid_videos = objLoaderVID.get_videos()
+
+    vid_images = 0
+    det_images = 0
+    for vid_idx in xrange(len(train_vid_videos)):
+        video = train_vid_videos[vid_idx]
+        annos = video.annotations
+        vid_images += len(annos)
+
+    total_image_size = vid_images
+    logger.info('total training VID images size is: ' + str(vid_images))
+    ###### Load vid training images and annotations #####
 
 
     logger.info('total training image size is: IMAGENET: ' + str(len(train_imagenet_images)))
 
     # debug
-    # cur_batch = data_reader(train_vid_videos)
+    cur_batch = data_reader(train_vid_videos, adj=False)
     # cur_batch = data_reader_DET(objLoaderImgNet, train_imagenet_images)
 
     total_images = len(train_imagenet_images)
