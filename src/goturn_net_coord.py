@@ -2,6 +2,7 @@ import tensorflow as tf
 import numpy as np
 from helper.config import POLICY
 from logger.logger import setup_logger
+from helper.BoundingBox import calculate_box
 
 logger = setup_logger(logfile=None)
 
@@ -139,7 +140,7 @@ class TRACKNET:
         ########### fully connencted layers ###########
 
         # for object only using image
-        self.fc1_image = self._fc_relu_layers(self.image_pool5, dim=4096, name="fc1_image")
+        self.fc1_image = self._fc_relu_layers(self.concat, dim=4096, name="fc1_image")
         if (self.train):
             self.fc1_image = tf.nn.dropout(self.fc1_image, self.drop)
 
@@ -510,8 +511,4 @@ if __name__ == "__main__":
     re_fc4_image, fc4_adj = sess.run([tracknet.re_fc4_image, tracknet.fc4_adj],
                                      feed_dict={tracknet.image: a,
                                                 tracknet.target: b})
-    # from helper.BoundingBox import calculate_box
-    # bbox_estimate, object_bool, objectness = calculate_box(re_fc4_image, fc4_adj)
-
-
-
+    bbox_estimate, object_bool, objectness = calculate_box(re_fc4_image, fc4_adj)
