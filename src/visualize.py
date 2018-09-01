@@ -85,14 +85,15 @@ for seq in seqs:
             redraw_fn.text3 = axes.text(0.03, 0.87, 'obj: {:.2f}'.format(objectness), fontdict={'size':10,},
                     ha='left', va='top', bbox={'facecolor':'blue', 'alpha':0.7}, transform=axes.transAxes)
             redraw_fn.text1_p = axes_p.text(0.03, 0.97, '{}: {}'.format(seq, idx+1), fontdict={'size':10,},
-                    ha='left', va='top', bbox={'facecolor':'yellow', 'alpha':0.7}, transform=axes.transAxes)
+                    ha='left', va='top', bbox={'facecolor':'yellow', 'alpha':0.7}, transform=axes_p.transAxes)
             redraw_fn.text2_p = axes_p.text(0.03, 0.92, 'olap: {:.2f}'.format(overlap), fontdict={'size':10,},
-                    ha='left', va='top', bbox={'facecolor':'red', 'alpha':0.7}, transform=axes.transAxes)
+                    ha='left', va='top', bbox={'facecolor':'red', 'alpha':0.7}, transform=axes_p.transAxes)
             redraw_fn.text3_p = axes_p.text(0.03, 0.87, 'obj: {:.2f}'.format(objectness), fontdict={'size':10,},
-                    ha='left', va='top', bbox={'facecolor':'blue', 'alpha':0.7}, transform=axes.transAxes)
+                    ha='left', va='top', bbox={'facecolor':'blue', 'alpha':0.7}, transform=axes_p.transAxes)
             redraw_fn.initialized = True
         else:
             redraw_fn.im.set_array(img)
+            # redraw_fn.im_p.set_array(imread(plot_png))
             set_bbox(redraw_fn.bb1, vot_rect(bboxes_gt[idx]))
             set_bbox(redraw_fn.bb2, b_seq)
             redraw_fn.text1.set_text('{}: {}'.format(seq, idx+1))
