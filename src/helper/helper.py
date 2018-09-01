@@ -49,9 +49,10 @@ def sample_exp_two_sides_shift(lambda_):
 
     rand_uniform = sample_rand_uniform()
 
+    # -inf < z < 0, 0 > 80% > -0.2
     z = math.log(rand_uniform)
-    if z < -0.3:
-        z = 0.3
+    if z < -0.2:
+        z = -0.2
 
     # return math.log(rand_uniform) / (lambda_ * pos_or_neg)
     return z / pos_or_neg

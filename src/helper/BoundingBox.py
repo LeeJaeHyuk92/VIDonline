@@ -201,7 +201,7 @@ class BoundingBox:
                # and (num_tries_x < kMaxNumTries)):
 
             if shift_motion_model:
-                new_x_temp = center_x + width * sample_exp_two_sides(lambda_shift_frac)
+                new_x_temp = center_x + width * sample_exp_two_sides_shift(lambda_shift_frac)
             else:
                 rand_num = sample_rand_uniform()
                 new_x_temp = center_x + rand_num * (2 * new_width) - new_width
@@ -221,7 +221,7 @@ class BoundingBox:
                # and (num_tries_y < kMaxNumTries)):
 
             if shift_motion_model:
-                new_y_temp = center_y + height * sample_exp_two_sides(lambda_shift_frac)
+                new_y_temp = center_y + height * sample_exp_two_sides_shift(lambda_shift_frac)
             else:
                 rand_num = sample_rand_uniform()
                 new_y_temp = center_y + rand_num * (2 * new_height) - new_height
