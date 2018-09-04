@@ -81,19 +81,19 @@ for seq in seqs:
         if not redraw_fn.initialized:
             redraw_fn.im = axes.imshow(img)
             
-            if len(results_vot) >= 1:
+            if args.r is not None:
                 x, y, w, h = bbox_seq_dict[args.r][idx]
                 redraw_fn.bb1 = Rectangle((x, y), w, h, fill=False, edgecolor='red', linewidth=3)
                 axes.add_patch(redraw_fn.bb1)
-            if len(results_vot) >= 2:
+            if args.g is not None:
                 x, y, w, h = bbox_seq_dict[args.g][idx]
                 redraw_fn.bb2 = Rectangle((x, y), w, h, fill=False, edgecolor='green', linewidth=3)
                 axes.add_patch(redraw_fn.bb2)
-            if len(results_vot) >= 3:
+            if args.b is not None:
                 x, y, w, h = bbox_seq_dict[args.b][idx]
                 redraw_fn.bb3 = Rectangle((x, y), w, h, fill=False, edgecolor='blue', linewidth=3)
                 axes.add_patch(redraw_fn.bb3)
-            if len(results_vot) >= 4:
+            if args.y is not None:
                 x, y, w, h = bbox_seq_dict[args.y][idx]
                 redraw_fn.bb4 = Rectangle((x, y), w, h, fill=False, edgecolor='yellow', linewidth=3)
                 axes.add_patch(redraw_fn.bb4)
@@ -103,13 +103,13 @@ for seq in seqs:
             redraw_fn.initialized = True
         else:
             redraw_fn.im.set_array(img)
-            if len(results_vot) >= 1:
+            if args.r is not None:
                 set_bbox(redraw_fn.bb1, bbox_seq_dict[args.r][idx])
-            if len(results_vot) >= 2:
+            if args.g is not None:
                 set_bbox(redraw_fn.bb2, bbox_seq_dict[args.g][idx])
-            if len(results_vot) >= 3:
+            if args.b is not None:
                 set_bbox(redraw_fn.bb3, bbox_seq_dict[args.b][idx])
-            if len(results_vot) >= 4:
+            if args.y is not None:
                 set_bbox(redraw_fn.bb4, bbox_seq_dict[args.y][idx])
             redraw_fn.text1.set_text('{}: {}'.format(seq, idx+1))
 
