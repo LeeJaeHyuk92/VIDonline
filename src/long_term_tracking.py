@@ -1,8 +1,8 @@
-import glob
-import sys
-import os
-
 import argparse
+import glob
+import os
+import sys
+
 import cv2
 # jaehyuk, check network file
 import goturn_net_coord
@@ -12,6 +12,7 @@ from helper.BoundingBox import BoundingBox, calculate_box
 from helper.config import POLICY
 from helper.image_proc import cropPadImage
 from logger.logger import setup_logger
+from progressbar import ProgressBar, ETA, Percentage
 
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 FLOAT_MAX = sys.float_info.max
@@ -165,18 +166,22 @@ class bbox_estimator:
 
 
 if __name__ == '__main__':
-    # import pdb; pdb.set_trace() # debug
     BATCH_SIZE = 1
+
+    # for progressbar
     logger = setup_logger(logfile=None)
     ckpt_dir = "/home/jaehyuk/code/github/vot-toolkit/tracker/examples/python/checkpoints_temp"
     seq_dir = "./sequences"
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("-v", help='plot visualization', type=bool, default=False)
+    parser.add_argument("-v", "--vis", dest='vis', help='plot visualization', action='store_true', default=False)
+    parser.add_argument("-c", "--ckpt", dest='ckpt', help='upload checkpount', type=str, default=None, metavar="FILE")
     args = parser.parse_args()
 
-    visualize = args.v
-    ckpt = None
+    # import pdb; pdb.set_trace() # debug
+
+    visualize = args.vis
+    ckpt = args.ckpt
         
     bbox_estim = bbox_estimator(False, logger)
     # jaehyuk, check network file
@@ -202,16 +207,20 @@ if __name__ == '__main__':
         saver = tf.train.Saver()
         saver.restore(sess, ckpt)
         logger.info(str(ckpt) + " is restored")
+        ckpt_num = str(ckpt).split('-')[-1]
     else:
         saver = tf.train.Saver()
         saver.restore(sess, ckpt_in_dir)
         logger.info("model is restored using " + str(ckpt_in_dir))
+        ckpt_num = str(ckpt_in_dir).split('-')[-1]
 
     seqs = os.listdir(seq_dir)
     if 'list.txt' in seqs:
         seqs.remove('list.txt')
-        
-    for seq in seqs:
+
+    widgets = ['Sequence: ', Percentage(), " ", ETA()]
+    pbar = ProgressBar(widgets=widgets)
+    for seq in pbar(seqs):
         seq_path = os.path.join(seq_dir, seq)
         result_seq = []
         objectness_seq = []
@@ -279,6 +288,7 @@ if __name__ == '__main__':
                     pass
                     # cv2.rectangle
                     # cv2.putText
+
         # (overlap, objectness)/frame
         import matplotlib.pyplot as plt
         fig = plt.figure()
@@ -298,22 +308,24 @@ if __name__ == '__main__':
             os.mkdir('./result')
         if not os.path.exists('./result/{}'.format(seq)):
             os.mkdir('./result/{}'.format(seq))
-        with open(os.path.join('./result/{}'.format(seq), 'result.txt'), 'w') as f:
+        if not os.path.exists('./result/{}/{}'.format(seq, ckpt_num)):
+            os.mkdir('./result/{}/{}'.format(seq, ckpt_num))
+
+        with open(os.path.join('./result/{}/{}'.format(seq, ckpt_num), 'result.txt'), 'w') as f:
             for b in result_seq:
                 line = "{},{},{},{}\n".format(b[0], b[1], b[2], b[3])
                 f.write(line)
 
-        with open(os.path.join('./result/{}'.format(seq), 'overlap.txt'), 'w') as f:
+        with open(os.path.join('./result/{}/{}'.format(seq, ckpt_num), 'overlap.txt'), 'w') as f:
             for o in overlap_seq:
                 line = "{}\n".format(o)
                 f.write(line)
 
-        with open(os.path.join('./result/{}'.format(seq), 'objectness.txt'), 'w') as f:
+        with open(os.path.join('./result/{}/{}'.format(seq, ckpt_num), 'objectness.txt'), 'w') as f:
             for obj in objectness_seq:
                 line = "{}\n".format(obj[0])
                 f.write(line)
 
-        plt.savefig(os.path.join('./result/{}'.format(seq), 'plot.png'))
-        plt.savefig(os.path.join('./result/{}.png'.format(seq)))
+        plt.savefig(os.path.join('./result/{}/{}'.format(seq, ckpt_num), 'plot.png'))
         plt.close()
 

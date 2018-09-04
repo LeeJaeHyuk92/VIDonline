@@ -37,9 +37,8 @@ def vot_rect(polygon):
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument("-s", help="sequence ex) ball", type=str)
+parser.add_argument("-s", help="sequence ex) ball", type=str, metavar="SEQUENCE")
 args = parser.parse_args()
-# import pdb; pdb.set_trace()
 seqs = os.listdir('./sequences')
 if 'list.txt' in seqs:
     seqs.remove('list.txt')
@@ -71,6 +70,7 @@ for seq in seqs:
         objectness = float(objectness_seq[idx - 1])
 
         if not redraw_fn.initialized:
+            # import pdb; pdb.set_trace()
             axes, axes_p = axes
             redraw_fn.im_p = axes_p.imshow(imread(plot_png))
             redraw_fn.im = axes.imshow(img)
@@ -92,6 +92,7 @@ for seq in seqs:
                     ha='left', va='top', bbox={'facecolor':'blue', 'alpha':0.7}, transform=axes_p.transAxes)
             redraw_fn.initialized = True
         else:
+            # import pdb; pdb.set_trace()
             redraw_fn.im.set_array(img)
             # redraw_fn.im_p.set_array(imread(plot_png))
             set_bbox(redraw_fn.bb1, vot_rect(bboxes_gt[idx]))
