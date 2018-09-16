@@ -216,6 +216,7 @@ class TRACKNET:
         sconf = float(m['object_scale'])
         snoob = float(m['noobject_scale'])
 
+        import pdb; pdb.set_trace()
 
         # Extract the coordinate prediction from net.out
         net_out_reshape = tf.reshape(net_out, [-1, H, W, B])
@@ -223,7 +224,10 @@ class TRACKNET:
         adjusted_c = tf.reshape(adjusted_c, [-1, H * W, B])
         adjusted_net_out = adjusted_c
 
-        conid = snoob * (1. - self.confs) + sconf * self.confs
+        # focal loss
+        # conid = snoob * (1. - self.confs) + sconf * self.confs
+        conid = tf.pow(adjusted_c, 2) 
+
         loss = tf.pow(adjusted_net_out - self.confs, 2)
         loss = tf.multiply(loss, conid)
         loss = tf.reshape(loss, [-1, H * W * B])
