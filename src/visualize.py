@@ -81,15 +81,15 @@ for seq in seqs:
             redraw_fn.text1 = axes.text(0.03, 0.97, '{}: {}'.format(seq, idx+1), fontdict={'size':10,},
                     ha='left', va='top', bbox={'facecolor':'yellow', 'alpha':0.7}, transform=axes.transAxes)
             redraw_fn.text2 = axes.text(0.03, 0.92, 'olap: {:.2f}'.format(overlap), fontdict={'size':10,},
-                    ha='left', va='top', bbox={'facecolor':'red', 'alpha':0.7}, transform=axes.transAxes)
-            redraw_fn.text3 = axes.text(0.03, 0.87, 'obj: {:.2f}'.format(objectness), fontdict={'size':10,},
                     ha='left', va='top', bbox={'facecolor':'blue', 'alpha':0.7}, transform=axes.transAxes)
+            redraw_fn.text3 = axes.text(0.03, 0.87, 'obj: {:.2f}'.format(objectness), fontdict={'size':10,},
+                    ha='left', va='top', bbox={'facecolor':'red', 'alpha':0.7}, transform=axes.transAxes)
             redraw_fn.text1_p = axes_p.text(0.03, 0.97, '{}: {}'.format(seq, idx+1), fontdict={'size':10,},
                     ha='left', va='top', bbox={'facecolor':'yellow', 'alpha':0.7}, transform=axes_p.transAxes)
             redraw_fn.text2_p = axes_p.text(0.03, 0.92, 'olap: {:.2f}'.format(overlap), fontdict={'size':10,},
-                    ha='left', va='top', bbox={'facecolor':'red', 'alpha':0.7}, transform=axes_p.transAxes)
-            redraw_fn.text3_p = axes_p.text(0.03, 0.87, 'obj: {:.2f}'.format(objectness), fontdict={'size':10,},
                     ha='left', va='top', bbox={'facecolor':'blue', 'alpha':0.7}, transform=axes_p.transAxes)
+            redraw_fn.text3_p = axes_p.text(0.03, 0.87, 'obj: {:.2f}'.format(objectness), fontdict={'size':10,},
+                    ha='left', va='top', bbox={'facecolor':'red', 'alpha':0.7}, transform=axes_p.transAxes)
             redraw_fn.initialized = True
         else:
             # import pdb; pdb.set_trace()

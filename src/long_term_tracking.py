@@ -296,7 +296,7 @@ if __name__ == '__main__':
         plt.plot(range(len(objectness_seq)), objectness_seq, 'ro', label='objectness', markersize=3)
         plt.ylim(0, 1)
         plt.grid(True)
-        plt.title("{}".format(str(seq)))
+        plt.title("{} with {}".format(str(seq), str(ckpt_num)))
         plt.xlabel("Frames")
         plt.legend(loc='best')
         # visualization
@@ -308,24 +308,22 @@ if __name__ == '__main__':
             os.mkdir('./result')
         if not os.path.exists('./result/{}'.format(seq)):
             os.mkdir('./result/{}'.format(seq))
-        if not os.path.exists('./result/{}/{}'.format(seq, ckpt_num)):
-            os.mkdir('./result/{}/{}'.format(seq, ckpt_num))
 
-        with open(os.path.join('./result/{}/{}'.format(seq, ckpt_num), 'result.txt'), 'w') as f:
+        with open(os.path.join('./result/{}'.format(seq), 'result.txt'), 'w') as f:
             for b in result_seq:
                 line = "{},{},{},{}\n".format(b[0], b[1], b[2], b[3])
                 f.write(line)
 
-        with open(os.path.join('./result/{}/{}'.format(seq, ckpt_num), 'overlap.txt'), 'w') as f:
+        with open(os.path.join('./result/{}'.format(seq), 'overlap.txt'), 'w') as f:
             for o in overlap_seq:
                 line = "{}\n".format(o)
                 f.write(line)
 
-        with open(os.path.join('./result/{}/{}'.format(seq, ckpt_num), 'objectness.txt'), 'w') as f:
+        with open(os.path.join('./result/{}'.format(seq), 'objectness.txt'), 'w') as f:
             for obj in objectness_seq:
                 line = "{}\n".format(obj[0])
                 f.write(line)
 
-        plt.savefig(os.path.join('./result/{}/{}'.format(seq, ckpt_num), 'plot.png'))
+        plt.savefig(os.path.join('./result/{}'.format(seq), 'plot.png'))
         plt.close()
 
