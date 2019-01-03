@@ -2,6 +2,7 @@ import argparse
 import glob
 import os
 import sys
+import time
 
 import cv2
 # jaehyuk, check network file
@@ -40,6 +41,21 @@ class bbox_estimator:
         self.prevBoxeffect = 0
         self.occlusion_flag = 0
 
+        target_pad, _, _,  _ = cropPadImage(self.bbox_prev_tight, self.image_prev)
+
+        # image, BGR(training type)
+        target_pad_resize = self.preprocess(target_pad)
+        
+        # jaehyuk, check hanning windows
+        hann_1d = np.expand_dims(np.hanning(227), axis=0)
+        hann_2d = np.transpose(hann_1d) * hann_1d
+        hann_2d = np.expand_dims(hann_2d, axis=2)
+        target_pad_resize = target_pad_resize * hann_2d
+
+        target_pad_expdim = np.expand_dims(target_pad_resize, axis=0)
+        self.target_pool5 = sess.run([tracknet.target_pool5], feed_dict={tracknet.target: target_pad_expdim})
+        self.target_pool5 = np.resize(self.target_pool5, [1,6,6,256])
+
     def preprocess(self, image):
         """TODO: Docstring for preprocess.
 
@@ -57,25 +73,25 @@ class bbox_estimator:
         :returns: TODO
 
         """
-        target_pad, _, _,  _ = cropPadImage(self.bbox_prev_tight, self.image_prev)
+        # target_pad, _, _,  _ = cropPadImage(self.bbox_prev_tight, self.image_prev)
         cur_search_region, search_location, edge_spacing_x, edge_spacing_y = cropPadImage(self.bbox_curr_prior_tight, image_curr)
 
         # image, BGR(training type)
         cur_search_region_resize = self.preprocess(cur_search_region)
-        target_pad_resize = self.preprocess(target_pad)
+        # target_pad_resize = self.preprocess(target_pad)
         
         # jaehyuk, check hanning windows
-        hann_1d = np.expand_dims(np.hanning(227), axis=0)
-        hann_2d = np.transpose(hann_1d) * hann_1d
-        hann_2d = np.expand_dims(hann_2d, axis=2)
-        target_pad_resize = target_pad_resize * hann_2d
+        # hann_1d = np.expand_dims(np.hanning(227), axis=0)
+        # hann_2d = np.transpose(hann_1d) * hann_1d
+        # hann_2d = np.expand_dims(hann_2d, axis=2)
+        # target_pad_resize = target_pad_resize * hann_2d
 
         cur_search_region_expdim = np.expand_dims(cur_search_region_resize, axis=0)
-        target_pad_expdim = np.expand_dims(target_pad_resize, axis=0)
+        # target_pad_expdim = np.expand_dims(target_pad_resize, axis=0)
 
         re_fc4_image, fc4_adj = sess.run([tracknet.re_fc4_image, tracknet.fc4_adj],
                                          feed_dict={tracknet.image: cur_search_region_expdim,
-                                                    tracknet.target: target_pad_expdim})
+                                                    tracknet.target_pool5: self.target_pool5})
         bbox_estimate, object_bool, objectness = calculate_box(re_fc4_image, fc4_adj)
         # print('objectness_s is: ', objectness)
 
@@ -170,7 +186,8 @@ if __name__ == '__main__':
 
     # for progressbar
     logger = setup_logger(logfile=None)
-    ckpt_dir = "/home/jaehyuk/code/github/vot-toolkit/tracker/examples/python/checkpoints_temp"
+    # ckpt_dir = "/home/jaehyuk/code/github/vot-toolkit/tracker/examples/python/checkpoints_temp"
+    ckpt_dir = "./checkpoints"
     seq_dir = "./sequences"
 
     parser = argparse.ArgumentParser()
@@ -194,13 +211,6 @@ if __name__ == '__main__':
     sess.run(init)
     sess.run(init_local)
 
-    # jaehyuk, check checkpoint, descend
-    all_ckpt_meta = glob.glob(os.path.join(ckpt_dir, '*.meta'))
-    num = []
-    for ckpt_meta in all_ckpt_meta:
-        num.append(int(ckpt_meta.split('-')[2].split('.')[0]))
-    max_num = max(num)
-    ckpt_in_dir = os.path.join(ckpt_dir, 'checkpoint.ckpt-' + str(max_num))
     
     # if ckpt does not exist, pick max num ckpt in ckpt_dir
     if ckpt:
@@ -209,6 +219,14 @@ if __name__ == '__main__':
         logger.info(str(ckpt) + " is restored")
         ckpt_num = str(ckpt).split('-')[-1]
     else:
+        # jaehyuk, check checkpoint, descend
+        all_ckpt_meta = glob.glob(os.path.join(ckpt_dir, '*.meta'))
+        num = []
+        for ckpt_meta in all_ckpt_meta:
+            num.append(int(ckpt_meta.split('-')[2].split('.')[0]))
+        max_num = max(num)
+        ckpt_in_dir = os.path.join(ckpt_dir, 'checkpoint.ckpt-' + str(max_num))
+
         saver = tf.train.Saver()
         saver.restore(sess, ckpt_in_dir)
         logger.info("model is restored using " + str(ckpt_in_dir))
@@ -231,6 +249,7 @@ if __name__ == '__main__':
         bboxes_gt = [x.strip('\n') for x in open(gt, 'r').readlines()]
         
         images_path = sorted(glob.glob(os.path.join(seq_path, "color", "*.jpg")))
+        time_total = 0.
         for i, image_path in enumerate(images_path):
             image = cv2.imread(image_path)
 
@@ -252,7 +271,10 @@ if __name__ == '__main__':
             if i == 0:
                 bbox_estim.init(image, gt_bbox)
             else:
+                start_time = time.time()
                 bbox_estimate, objectness = bbox_estim.track(image, tracknet,  sess)
+                # print('test: time elapsed: %.4fs.'%(time.time()-start_time))
+                time_total += time.time()-start_time
 
                 # vot result format
                 left_x = bbox_estimate.x1
@@ -289,6 +311,7 @@ if __name__ == '__main__':
                     # cv2.rectangle
                     # cv2.putText
 
+        print('test: time elapsed: %.4fs.'%(time_total / len(images_path)))
         # (overlap, objectness)/frame
         import matplotlib.pyplot as plt
         fig = plt.figure()

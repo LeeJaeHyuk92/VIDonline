@@ -83,19 +83,19 @@ for seq in seqs:
             
             if args.r is not None:
                 x, y, w, h = bbox_seq_dict[args.r][idx]
-                redraw_fn.bb1 = Rectangle((x, y), w, h, fill=False, edgecolor='red', linewidth=3)
+                redraw_fn.bb1 = Rectangle((x, y), w, h, fill=False, edgecolor='red', alpha=0.7, linewidth=3)
                 axes.add_patch(redraw_fn.bb1)
             if args.g is not None:
                 x, y, w, h = bbox_seq_dict[args.g][idx]
-                redraw_fn.bb2 = Rectangle((x, y), w, h, fill=False, edgecolor='green', linewidth=3)
+                redraw_fn.bb2 = Rectangle((x, y), w, h, fill=False, edgecolor='green', alpha=0.7, linewidth=3)
                 axes.add_patch(redraw_fn.bb2)
             if args.b is not None:
                 x, y, w, h = bbox_seq_dict[args.b][idx]
-                redraw_fn.bb3 = Rectangle((x, y), w, h, fill=False, edgecolor='blue', linewidth=3)
+                redraw_fn.bb3 = Rectangle((x, y), w, h, fill=False, edgecolor='blue', alpha=0.7, linewidth=3)
                 axes.add_patch(redraw_fn.bb3)
             if args.y is not None:
                 x, y, w, h = bbox_seq_dict[args.y][idx]
-                redraw_fn.bb4 = Rectangle((x, y), w, h, fill=False, edgecolor='yellow', linewidth=3)
+                redraw_fn.bb4 = Rectangle((x, y), w, h, fill=False, edgecolor='yellow', alpha=0.7, linewidth=3)
                 axes.add_patch(redraw_fn.bb4)
 
             redraw_fn.text1 = axes.text(0.03, 0.97, '{}: {}'.format(seq, idx+1), fontdict={'size':10,},
